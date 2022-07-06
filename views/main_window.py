@@ -1,5 +1,6 @@
-from PyQt5.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QTextEdit, QFileDialog
-from models.sentiment_analyzer import analyse_sentiment
+from PyQt5.QtWidgets import QMainWindow, QPushButton, QTextEdit, QFileDialog, QLabel, QVBoxLayout, QWidget
+from models.sentiment_analyser import analyse_sentiment
+from .mpl_widget import MplWidget
 
 class MainWindow(QMainWindow):
     def __init__(self):

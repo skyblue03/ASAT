@@ -13,9 +13,10 @@ def analyse_sentiment(text):
     result = nlp(text)[0]
     return result['label']
 
-def detect_emotion(text):
+def detect_emotion(text, threshold=0.05):
     emotions = emotion_model(text)
-    return emotions
+    significant_emotions = [emotion for emotion in emotions[0] if emotion['score'] > threshold]
+    return significant_emotions
 
 def recognize_entities(text):
     entities = ner_model(text)

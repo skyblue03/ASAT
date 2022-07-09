@@ -57,7 +57,7 @@ class MainWindow(QMainWindow):
     def on_detect_emotion_clicked(self):
         text = self.text_edit.toPlainText()
         emotions = detect_emotion(text)
-        emotion_result = "\n".join([f"{emotion['label']}: {emotion['score']:.2f}" for emotion in emotions[0]])
+        emotion_result = "\n".join([f"{emotion['label']}: {emotion['score']:.2f}" for emotion in emotions])
         self.emotion_label.setText(f"Emotion Detection Result:\n{emotion_result}")
 
     def on_recognize_entities_clicked(self):

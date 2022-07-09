@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QPushButton, QTextEdit, QFileDialog, QLabel, QVBoxLayout, QWidget
-from models.sentiment_analyser import analyse_sentiment, detect_emotion
+from models.sentiment_analyser import analyse_sentiment, detect_emotion, recognize_entities
 from .mpl_widget import MplWidget
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -29,6 +28,10 @@ class MainWindow(QMainWindow):
         self.emotion_button.clicked.connect(self.on_detect_emotion_clicked)
         self.layout.addWidget(self.emotion_button)
 
+        self.entity_button = QPushButton('Recognize Entities', self)
+        self.entity_button.clicked.connect(self.on_recognize_entities_clicked)
+        self.layout.addWidget(self.entity_button)
+
         self.save_button = QPushButton('Save Results', self)
         self.save_button.clicked.connect(self.save_results)
         self.layout.addWidget(self.save_button)
@@ -38,6 +41,9 @@ class MainWindow(QMainWindow):
 
         self.emotion_label = QLabel('Emotion Detection Result:', self)
         self.layout.addWidget(self.emotion_label)
+
+        self.entity_label = QLabel('Entity Recognition Result:', self)
+        self.layout.addWidget(self.entity_label)
 
         container = QWidget()
         container.setLayout(self.layout)
@@ -53,6 +59,12 @@ class MainWindow(QMainWindow):
         emotions = detect_emotion(text)
         emotion_result = "\n".join([f"{emotion['label']}: {emotion['score']:.2f}" for emotion in emotions[0]])
         self.emotion_label.setText(f"Emotion Detection Result:\n{emotion_result}")
+
+    def on_recognize_entities_clicked(self):
+        text = self.text_edit.toPlainText()
+        entities = recognize_entities(text)
+        entity_result = "\n".join([f"{entity['entity_group']}: {entity['word']} (score: {entity['score']:.2f})" for entity in entities])
+        self.entity_label.setText(f"Entity Recognition Result:\n{entity_result}")
 
     def load_file(self):
         fname, _ = QFileDialog.getOpenFileName(self, 'Open file', '/home', "Text files (*.txt);;CSV files (*.csv)")

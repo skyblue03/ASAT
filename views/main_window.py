@@ -45,6 +45,9 @@ class MainWindow(QMainWindow):
         self.entity_label = QLabel('Entity Recognition Result:', self)
         self.layout.addWidget(self.entity_label)
 
+        self.mpl_widget = MplWidget(self)
+        self.layout.addWidget(self.mpl_widget)
+
         container = QWidget()
         container.setLayout(self.layout)
         self.setCentralWidget(container)
@@ -53,6 +56,7 @@ class MainWindow(QMainWindow):
         text = self.text_edit.toPlainText()
         sentiment = analyse_sentiment(text)
         self.result_label.setText(f"Sentiment Result: {sentiment}")
+        self.update_plot({'Positive': 10, 'Neutral': 5, 'Negative': 3})  # Example data
 
     def on_detect_emotion_clicked(self):
         text = self.text_edit.toPlainText()
@@ -91,3 +95,6 @@ class MainWindow(QMainWindow):
             with open(fname, 'w') as file:
                 data = self.text_edit.toPlainText()
                 file.write(data)
+
+    def update_plot(self, data):
+        self.mpl_widget.plot(data)

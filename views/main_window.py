@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QMainWindow, QPushButton, QTextEdit, QFileDialog, QLabel, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QMainWindow, QPushButton, QTextEdit, QFileDialog, QLabel, QVBoxLayout, QWidget, QCheckBox
+from PyQt5.QtCore import Qt
 from models.sentiment_analyser import analyse_sentiment, detect_emotion, recognize_entities, generate_pdf_report, generate_excel_report
 from .mpl_widget import MplWidget
 
@@ -10,6 +11,7 @@ class MainWindow(QMainWindow):
         self.layout = QVBoxLayout()
 
         self.text_edit = QTextEdit(self)
+        self.text_edit.textChanged.connect(self.on_text_changed)
         self.layout.addWidget(self.text_edit)
 
         self.load_button = QPushButton('Load Text File', self)
@@ -31,6 +33,10 @@ class MainWindow(QMainWindow):
         self.entity_button = QPushButton('Recognize Entities', self)
         self.entity_button.clicked.connect(self.on_recognize_entities_clicked)
         self.layout.addWidget(self.entity_button)
+
+        self.real_time_checkbox = QCheckBox('Enable Real-time Analysis', self)
+        self.real_time_checkbox.stateChanged.connect(self.on_real_time_checkbox_changed)
+        self.layout.addWidget(self.real_time_checkbox)
 
         self.save_pdf_button = QPushButton('Save PDF Report', self)
         self.save_pdf_button.clicked.connect(self.on_save_pdf_report_clicked)
@@ -60,13 +66,42 @@ class MainWindow(QMainWindow):
         self.current_sentiment = None
         self.current_emotions = None
         self.current_entities = None
+        self.real_time_analysis_enabled = False
+
+    def on_text_changed(self):
+        if self.real_time_analysis_enabled:
+            text = self.text_edit.toPlainText()
+            self.perform_real_time_analysis(text)
+
+    def on_real_time_checkbox_changed(self, state):
+        self.real_time_analysis_enabled = state == Qt.Checked
+        if self.real_time_analysis_enabled:
+            self.on_text_changed()  # Perform analysis immediately if enabling real-time mode
+
+    def perform_real_time_analysis(self, text):
+        sentiment = analyse_sentiment(text)
+        self.result_label.setText(f"Sentiment Result: {sentiment}")
+        self.current_sentiment = sentiment
+
+        emotions = detect_emotion(text)
+        if isinstance(emotions, str):
+            self.emotion_label.setText(emotions)  # Display error message
+        else:
+            emotion_result = "\n".join([f"{emotion['label']}: {emotion['score']:.2f}" for emotion in emotions])
+            self.emotion_label.setText(f"Emotion Detection Result:\n{emotion_result}")
+            self.current_emotions = {emotion['label']: emotion['score'] for emotion in emotions}
+
+        entities = recognize_entities(text)
+        if isinstance(entities, str):
+            self.entity_label.setText(entities)  # Display error message
+        else:
+            entity_result = "\n".join([f"{entity['entity_group']}: {entity['word']} (score: {entity['score']:.2f})" for entity in entities])
+            self.entity_label.setText(f"Entity Recognition Result:\n{entity_result}")
+            self.current_entities = [{'entity_group': entity['entity_group'], 'word': entity['word'], 'score': entity['score']} for entity in entities]
 
     def on_analyse_clicked(self):
         text = self.text_edit.toPlainText()
-        sentiment = analyse_sentiment(text)
-        self.result_label.setText(f"Sentiment Result: {sentiment}")
-        self.update_plot({'Positive': 10, 'Neutral': 5, 'Negative': 3})  # Example data
-        self.current_sentiment = sentiment
+        self.perform_real_time_analysis(text)
 
     def on_detect_emotion_clicked(self):
         text = self.text_edit.toPlainText()
@@ -114,6 +149,8 @@ class MainWindow(QMainWindow):
             with open(fname, 'r') as file:
                 data = file.read()
                 self.text_edit.setText(data)
+                if self.real_time_analysis_enabled:
+                    self.perform_real_time_analysis(data)
 
     def load_multiple_files(self):
         files, _ = QFileDialog.getOpenFileNames(self, 'Open files', '', "Text files (*.txt);;CSV files (*.csv)")

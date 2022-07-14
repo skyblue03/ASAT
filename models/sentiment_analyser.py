@@ -1,4 +1,6 @@
 from transformers import pipeline, AutoTokenizer
+import matplotlib.pyplot as plt
+from datetime import datetime
 
 # Load pre-trained models
 nlp = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
@@ -86,3 +88,20 @@ def generate_excel_report(data, filename="report.xlsx"):
         writer.save()
     except Exception as e:
         print(f"Error in generating Excel report: {str(e)}")
+
+def track_sentiment_trends(texts, dates):
+    try:
+        sentiments = []
+        for text in texts:
+            sentiment = analyse_sentiment(text)
+            sentiments.append(sentiment)
+        plt.figure(figsize=(10, 5))
+        plt.plot(dates, sentiments, marker='o')
+        plt.title('Sentiment Trends Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Sentiment')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+    except Exception as e:
+        return f"Error in tracking sentiment trends: {str(e)}"

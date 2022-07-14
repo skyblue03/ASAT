@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QMainWindow, QPushButton, QTextEdit, QFileDialog, QLabel, QVBoxLayout, QWidget, QCheckBox
 from PyQt5.QtCore import Qt
-from models.sentiment_analyser import analyse_sentiment, detect_emotion, recognize_entities, generate_pdf_report, generate_excel_report
+from models.sentiment_analyser import analyse_sentiment, detect_emotion, recognize_entities, generate_pdf_report, generate_excel_report, track_sentiment_trends
 from .mpl_widget import MplWidget
+from datetime import datetime
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -38,6 +39,10 @@ class MainWindow(QMainWindow):
         self.real_time_checkbox.stateChanged.connect(self.on_real_time_checkbox_changed)
         self.layout.addWidget(self.real_time_checkbox)
 
+        self.track_trends_button = QPushButton('Track Sentiment Trends', self)
+        self.track_trends_button.clicked.connect(self.on_track_trends_clicked)
+        self.layout.addWidget(self.track_trends_button)
+
         self.save_pdf_button = QPushButton('Save PDF Report', self)
         self.save_pdf_button.clicked.connect(self.on_save_pdf_report_clicked)
         self.layout.addWidget(self.save_pdf_button)
@@ -62,11 +67,12 @@ class MainWindow(QMainWindow):
         container.setLayout(self.layout)
         self.setCentralWidget(container)
 
-        # Initialize current data attributes
         self.current_sentiment = None
         self.current_emotions = None
         self.current_entities = None
         self.real_time_analysis_enabled = False
+        self.texts = []
+        self.dates = []
 
     def on_text_changed(self):
         if self.real_time_analysis_enabled:
@@ -76,7 +82,7 @@ class MainWindow(QMainWindow):
     def on_real_time_checkbox_changed(self, state):
         self.real_time_analysis_enabled = state == Qt.Checked
         if self.real_time_analysis_enabled:
-            self.on_text_changed()  # Perform analysis immediately if enabling real-time mode
+            self.on_text_changed()
 
     def perform_real_time_analysis(self, text):
         sentiment = analyse_sentiment(text)
@@ -85,7 +91,7 @@ class MainWindow(QMainWindow):
 
         emotions = detect_emotion(text)
         if isinstance(emotions, str):
-            self.emotion_label.setText(emotions)  # Display error message
+            self.emotion_label.setText(emotions)
         else:
             emotion_result = "\n".join([f"{emotion['label']}: {emotion['score']:.2f}" for emotion in emotions])
             self.emotion_label.setText(f"Emotion Detection Result:\n{emotion_result}")
@@ -93,7 +99,7 @@ class MainWindow(QMainWindow):
 
         entities = recognize_entities(text)
         if isinstance(entities, str):
-            self.entity_label.setText(entities)  # Display error message
+            self.entity_label.setText(entities)
         else:
             entity_result = "\n".join([f"{entity['entity_group']}: {entity['word']} (score: {entity['score']:.2f})" for entity in entities])
             self.entity_label.setText(f"Entity Recognition Result:\n{entity_result}")
@@ -107,7 +113,7 @@ class MainWindow(QMainWindow):
         text = self.text_edit.toPlainText()
         emotions = detect_emotion(text)
         if isinstance(emotions, str):
-            self.emotion_label.setText(emotions)  # Display error message
+            self.emotion_label.setText(emotions)
         else:
             emotion_result = "\n".join([f"{emotion['label']}: {emotion['score']:.2f}" for emotion in emotions])
             self.emotion_label.setText(f"Emotion Detection Result:\n{emotion_result}")
@@ -117,7 +123,7 @@ class MainWindow(QMainWindow):
         text = self.text_edit.toPlainText()
         entities = recognize_entities(text)
         if isinstance(entities, str):
-            self.entity_label.setText(entities)  # Display error message
+            self.entity_label.setText(entities)
         else:
             entity_result = "\n".join([f"{entity['entity_group']}: {entity['word']} (score: {entity['score']:.2f})" for entity in entities])
             self.entity_label.setText(f"Entity Recognition Result:\n{entity_result}")
@@ -163,6 +169,13 @@ class MainWindow(QMainWindow):
                     results.append((fname, sentiment))
             result_text = "\n".join(f"{fname}: {sentiment}" for fname, sentiment in results)
             self.text_edit.setText(result_text)
+
+    def on_track_trends_clicked(self):
+        texts = self.texts
+        dates = self.dates
+        texts.append(self.text_edit.toPlainText())
+        dates.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        track_sentiment_trends(texts, dates)
 
     def save_results(self):
         fname, _ = QFileDialog.getSaveFileName(self, 'Save file', '', "Text files (*.txt)")

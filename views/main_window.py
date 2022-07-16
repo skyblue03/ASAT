@@ -3,6 +3,9 @@ from PyQt5.QtCore import Qt
 from models.sentiment_analyser import analyse_sentiment, detect_emotion, recognize_entities, generate_pdf_report, generate_excel_report, track_sentiment_trends
 from .mpl_widget import MplWidget
 from datetime import datetime
+import re
+import nltk
+from nltk.corpus import stopwords
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -43,6 +46,19 @@ class MainWindow(QMainWindow):
         self.track_trends_button.clicked.connect(self.on_track_trends_clicked)
         self.layout.addWidget(self.track_trends_button)
 
+        # Text Preprocessing
+        self.remove_punctuation_checkbox = QCheckBox('Remove Punctuation', self)
+        self.remove_punctuation_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
+        self.layout.addWidget(self.remove_punctuation_checkbox)
+
+        self.lowercase_checkbox = QCheckBox('Convert to Lowercase', self)
+        self.lowercase_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
+        self.layout.addWidget(self.lowercase_checkbox)
+
+        self.remove_stopwords_checkbox = QCheckBox('Remove Stopwords', self)
+        self.remove_stopwords_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
+        self.layout.addWidget(self.remove_stopwords_checkbox)
+
         self.save_pdf_button = QPushButton('Save PDF Report', self)
         self.save_pdf_button.clicked.connect(self.on_save_pdf_report_clicked)
         self.layout.addWidget(self.save_pdf_button)
@@ -74,6 +90,13 @@ class MainWindow(QMainWindow):
         self.texts = []
         self.dates = []
 
+        # Preprocessing
+        self.preprocessing_options = {
+            'remove_punctuation': False,
+            'convert_to_lowercase': False,
+            'remove_stopwords': False
+        }
+
     def on_text_changed(self):
         if self.real_time_analysis_enabled:
             text = self.text_edit.toPlainText()
@@ -84,7 +107,27 @@ class MainWindow(QMainWindow):
         if self.real_time_analysis_enabled:
             self.on_text_changed()
 
+    def on_preprocessing_option_changed(self, state):
+        sender = self.sender()
+        if sender == self.remove_punctuation_checkbox:
+            self.preprocessing_options['remove_punctuation'] = state == Qt.Checked
+        elif sender == self.lowercase_checkbox:
+            self.preprocessing_options['convert_to_lowercase'] = state == Qt.Checked
+        elif sender == self.remove_stopwords_checkbox:
+            self.preprocessing_options['remove_stopwords'] = state == Qt.Checked
+
+    def preprocess_text(self, text):
+        if self.preprocessing_options['remove_punctuation']:
+            text = re.sub(r'[^\w\s]', '', text)
+        if self.preprocessing_options['convert_to_lowercase']:
+            text = text.lower()
+        if self.preprocessing_options['remove_stopwords']:
+            stop_words = set(stopwords.words('english'))
+            text = ' '.join([word for word in text.split() if word.lower() not in stop_words])
+        return text
+
     def perform_real_time_analysis(self, text):
+        text = self.preprocess_text(text)
         sentiment = analyse_sentiment(text)
         self.result_label.setText(f"Sentiment Result: {sentiment}")
         self.current_sentiment = sentiment
@@ -111,6 +154,7 @@ class MainWindow(QMainWindow):
 
     def on_detect_emotion_clicked(self):
         text = self.text_edit.toPlainText()
+        text = self.preprocess_text(text)
         emotions = detect_emotion(text)
         if isinstance(emotions, str):
             self.emotion_label.setText(emotions)
@@ -121,6 +165,7 @@ class MainWindow(QMainWindow):
 
     def on_recognize_entities_clicked(self):
         text = self.text_edit.toPlainText()
+        text = self.preprocess_text(text)
         entities = recognize_entities(text)
         if isinstance(entities, str):
             self.entity_label.setText(entities)

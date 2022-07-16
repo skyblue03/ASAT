@@ -6,6 +6,13 @@ from datetime import datetime
 import re
 import nltk
 from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+import contractions
+
+nltk.download('stopwords')
+nltk.download('punkt')
+nltk.download('wordnet')
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -46,7 +53,6 @@ class MainWindow(QMainWindow):
         self.track_trends_button.clicked.connect(self.on_track_trends_clicked)
         self.layout.addWidget(self.track_trends_button)
 
-        # Text Preprocessing
         self.remove_punctuation_checkbox = QCheckBox('Remove Punctuation', self)
         self.remove_punctuation_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
         self.layout.addWidget(self.remove_punctuation_checkbox)
@@ -58,6 +64,34 @@ class MainWindow(QMainWindow):
         self.remove_stopwords_checkbox = QCheckBox('Remove Stopwords', self)
         self.remove_stopwords_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
         self.layout.addWidget(self.remove_stopwords_checkbox)
+
+        self.remove_urls_checkbox = QCheckBox('Remove URLs', self)
+        self.remove_urls_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
+        self.layout.addWidget(self.remove_urls_checkbox)
+
+        self.remove_mentions_checkbox = QCheckBox('Remove Mentions', self)
+        self.remove_mentions_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
+        self.layout.addWidget(self.remove_mentions_checkbox)
+
+        self.remove_hashtags_checkbox = QCheckBox('Remove Hashtags', self)
+        self.remove_hashtags_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
+        self.layout.addWidget(self.remove_hashtags_checkbox)
+
+        self.remove_numbers_checkbox = QCheckBox('Remove Numbers', self)
+        self.remove_numbers_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
+        self.layout.addWidget(self.remove_numbers_checkbox)
+
+        self.expand_contractions_checkbox = QCheckBox('Expand Contractions', self)
+        self.expand_contractions_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
+        self.layout.addWidget(self.expand_contractions_checkbox)
+
+        self.remove_whitespace_checkbox = QCheckBox('Remove Excess Whitespace', self)
+        self.remove_whitespace_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
+        self.layout.addWidget(self.remove_whitespace_checkbox)
+
+        self.lemmatization_checkbox = QCheckBox('Lemmatisation', self)
+        self.lemmatization_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
+        self.layout.addWidget(self.lemmatization_checkbox)
 
         self.save_pdf_button = QPushButton('Save PDF Report', self)
         self.save_pdf_button.clicked.connect(self.on_save_pdf_report_clicked)
@@ -90,11 +124,17 @@ class MainWindow(QMainWindow):
         self.texts = []
         self.dates = []
 
-        # Preprocessing
         self.preprocessing_options = {
             'remove_punctuation': False,
             'convert_to_lowercase': False,
-            'remove_stopwords': False
+            'remove_stopwords': False,
+            'remove_urls': False,
+            'remove_mentions': False,
+            'remove_hashtags': False,
+            'remove_numbers': False,
+            'expand_contractions': False,
+            'remove_whitespace': False,
+            'lemmatization': False
         }
 
     def on_text_changed(self):
@@ -115,8 +155,32 @@ class MainWindow(QMainWindow):
             self.preprocessing_options['convert_to_lowercase'] = state == Qt.Checked
         elif sender == self.remove_stopwords_checkbox:
             self.preprocessing_options['remove_stopwords'] = state == Qt.Checked
+        elif sender == self.remove_urls_checkbox:
+            self.preprocessing_options['remove_urls'] = state == Qt.Checked
+        elif sender == self.remove_mentions_checkbox:
+            self.preprocessing_options['remove_mentions'] = state == Qt.Checked
+        elif sender == self.remove_hashtags_checkbox:
+            self.preprocessing_options['remove_hashtags'] = state == Qt.Checked
+        elif sender == self.remove_numbers_checkbox:
+            self.preprocessing_options['remove_numbers'] = state == Qt.Checked
+        elif sender == self.expand_contractions_checkbox:
+            self.preprocessing_options['expand_contractions'] = state == Qt.Checked
+        elif sender == self.remove_whitespace_checkbox:
+            self.preprocessing_options['remove_whitespace'] = state == Qt.Checked
+        elif sender == self.lemmatization_checkbox:
+            self.preprocessing_options['lemmatization'] = state == Qt.Checked
 
     def preprocess_text(self, text):
+        if self.preprocessing_options['remove_urls']:
+            text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+        if self.preprocessing_options['remove_mentions']:
+            text = re.sub(r'@\w+', '', text)
+        if self.preprocessing_options['remove_hashtags']:
+            text = re.sub(r'#\w+', '', text)
+        if self.preprocessing_options['remove_numbers']:
+            text = re.sub(r'\d+', '', text)
+        if self.preprocessing_options['expand_contractions']:
+            text = contractions.fix(text)
         if self.preprocessing_options['remove_punctuation']:
             text = re.sub(r'[^\w\s]', '', text)
         if self.preprocessing_options['convert_to_lowercase']:
@@ -124,6 +188,11 @@ class MainWindow(QMainWindow):
         if self.preprocessing_options['remove_stopwords']:
             stop_words = set(stopwords.words('english'))
             text = ' '.join([word for word in text.split() if word.lower() not in stop_words])
+        if self.preprocessing_options['remove_whitespace']:
+            text = ' '.join(text.split())
+        if self.preprocessing_options['lemmatization']:
+            lemmatizer = WordNetLemmatizer()
+            text = ' '.join([lemmatizer.lemmatize(word) for word in word_tokenize(text)])
         return text
 
     def perform_real_time_analysis(self, text):

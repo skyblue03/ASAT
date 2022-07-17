@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QMainWindow, QPushButton, QTextEdit, QFileDialog, QLabel, QVBoxLayout, QWidget, QCheckBox
+from PyQt5.QtWidgets import QMainWindow, QPushButton, QTextEdit, QFileDialog, QLabel, QVBoxLayout, QWidget, QCheckBox, QLineEdit
 from PyQt5.QtCore import Qt
 from models.sentiment_analyser import analyse_sentiment, detect_emotion, recognize_entities, generate_pdf_report, generate_excel_report, track_sentiment_trends
+from models.web_scraping import fetch_amazon_reviews
 from .mpl_widget import MplWidget
 from datetime import datetime
 import re
@@ -52,6 +53,14 @@ class MainWindow(QMainWindow):
         self.track_trends_button = QPushButton('Track Sentiment Trends', self)
         self.track_trends_button.clicked.connect(self.on_track_trends_clicked)
         self.layout.addWidget(self.track_trends_button)
+
+        self.url_input = QLineEdit(self)
+        self.url_input.setPlaceholderText('Enter URL for reviews')
+        self.layout.addWidget(self.url_input)
+
+        self.fetch_reviews_button = QPushButton('Fetch Reviews', self)
+        self.fetch_reviews_button.clicked.connect(self.on_fetch_reviews_clicked)
+        self.layout.addWidget(self.fetch_reviews_button)
 
         self.remove_punctuation_checkbox = QCheckBox('Remove Punctuation', self)
         self.remove_punctuation_checkbox.stateChanged.connect(self.on_preprocessing_option_changed)
@@ -290,6 +299,12 @@ class MainWindow(QMainWindow):
         texts.append(self.text_edit.toPlainText())
         dates.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         track_sentiment_trends(texts, dates)
+
+    def on_fetch_reviews_clicked(self):
+        url = self.url_input.text()
+        if 'amazon' in url:
+            reviews = fetch_amazon_reviews(url)
+            self.text_edit.setText("\n".join(reviews))
 
     def save_results(self):
         fname, _ = QFileDialog.getSaveFileName(self, 'Save file', '', "Text files (*.txt)")
